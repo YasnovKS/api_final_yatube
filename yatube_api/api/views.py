@@ -1,12 +1,12 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from posts.models import Group, Post, Follow, User
-from rest_framework import viewsets
+from posts.models import Group, Post
+from rest_framework import filters, viewsets, mixins
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 
-from .permissions import FollowPermission, GroupPermission, IsAuthorOrReadOnly
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (CommentSerializer, FollowSerializer, GroupSerializer,
                           PostSerializer)
 
@@ -34,6 +34,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,
                           IsAuthorOrReadOnly)
     serializer_class = CommentSerializer
+    pagination_class = None
 
     def get_post(self):
         return get_object_or_404(Post, pk=self.kwargs.get('post_id'))
@@ -48,13 +49,15 @@ class CommentViewSet(viewsets.ModelViewSet):
                         post=post)
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(mixins.RetrieveModelMixin,
+                   mixins.ListModelMixin,
+                   viewsets.GenericViewSet):
     '''Класс представления для объектов модели Group.
     Реализует возможность получения данных о сообществах.'''
 
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = (GroupPermission,)
+    pagination_class = None
 
 
 class FollowViewSet(viewsets.ModelViewSet):
@@ -62,10 +65,13 @@ class FollowViewSet(viewsets.ModelViewSet):
     Реализует возможность получения данных о подписках,
     а также возможность подписываться на пользователей и
     отписываться от них.'''
-    permission_classes = (IsAuthenticated, FollowPermission)
+    permission_classes = (IsAuthenticated,)
     serializer_class = FollowSerializer
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend,
+                       filters.SearchFilter)
     filterset_fields = ('following',)
+    search_fields = ('following__username',)
+    pagination_class = None
 
     def get_queryset(self):
         return self.request.user.follower.all()
