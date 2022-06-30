@@ -34,7 +34,6 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,
                           IsAuthorOrReadOnly)
     serializer_class = CommentSerializer
-    pagination_class = None
 
     def get_post(self):
         return get_object_or_404(Post, pk=self.kwargs.get('post_id'))
@@ -57,21 +56,22 @@ class GroupViewSet(mixins.RetrieveModelMixin,
 
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    pagination_class = None
 
 
-class FollowViewSet(viewsets.ModelViewSet):
+class FollowViewSet(mixins.CreateModelMixin,
+                    mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
     '''Класс представления для объектов модели Follow.
     Реализует возможность получения данных о подписках,
     а также возможность подписываться на пользователей и
     отписываться от них.'''
+
     permission_classes = (IsAuthenticated,)
     serializer_class = FollowSerializer
     filter_backends = (DjangoFilterBackend,
                        filters.SearchFilter)
     filterset_fields = ('following',)
     search_fields = ('following__username',)
-    pagination_class = None
 
     def get_queryset(self):
         return self.request.user.follower.all()

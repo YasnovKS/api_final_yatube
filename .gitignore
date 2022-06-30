@@ -151,3 +151,4 @@ yatube_api/posts/static/
 
 # Файл запросов к api
 requests.http
+README.md
